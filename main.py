@@ -84,7 +84,7 @@ class PathGroup:
         self.path1 = []
         self.path2 = []
         self.all_paths = []
-    
+
     def update_paths(self):
         if len(self.paths)>1:
             self.path1_unshifted = self.paths[self.path1idx]
@@ -104,10 +104,6 @@ class PathGroup:
     def load_file(self,filename):
         self.paths, self.attributes, self.svg_attributes = svgpt.svg2paths2(filename)
         self.npaths = len(self.paths)
-        self.path1idx = 0
-        self.path1_unshifted = self.paths[self.path1idx]
-        self.path1 = self.path1_unshifted
-        self.path2 = self.paths[self.path2idx]
 
     @staticmethod
     def reverse_segment(segment):
@@ -346,10 +342,6 @@ class MainWindow(QMainWindow):
             filename = file_dialog.selectedFiles()
             self.pathgroup.load_file(filename[0])
             self.initialise_sliders(self.pathgroup)
-            if self.pathgroup.npaths > 1:
-                self.path2idx_slider.setValue(1)
-                self.path2idx_label.setText("Path 2 index: 2")
-                self.pathgroup.path2idx = 1
             self.pathgroup.update_paths()
             self.pathgroup.plot_curves(self.svg_canvas)
             self.plot_message.setText("File loaded: "+filename[0])
@@ -359,8 +351,16 @@ class MainWindow(QMainWindow):
         self.path2idx_slider.setMaximum(pathgroup.npaths-1)
         self.pathstart_slider.setMaximum(len(pathgroup.path1)-1)
         self.path1idx_slider.setValue(0)
-        self.path2idx_slider.setValue(0)
+        self.path1idx_label.setText("Path 1 index: 1")
+        if pathgroup.npaths > 1:
+            self.path2idx_slider.setValue(1)
+            self.path2idx_label.setText("Path 2 index: 2")
+            self.pathgroup.path2idx = 1
+        else:
+            self.path2idx_slider.setValue(0)
+            self.path2idx_label.setText("Path 2 index: 1")
         self.pathstart_slider.setValue(0)
+        self.pathstart_label.setText("Path start index: 1")
         self.nbefore_input.setValue(0)
         self.ninter_input.setValue(0)
         self.nafter_input.setValue(0)
