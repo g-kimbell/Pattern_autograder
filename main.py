@@ -361,9 +361,6 @@ class MainWindow(QMainWindow):
             self.path2idx_label.setText("Path 2 index: 1")
         self.pathstart_slider.setValue(0)
         self.pathstart_label.setText("Path start index: 1")
-        self.nbefore_input.setValue(0)
-        self.ninter_input.setValue(0)
-        self.nafter_input.setValue(0)
 
     def path1idx_slider_changed(self):
         self.pathgroup.path1idx = self.path1idx_slider.value()
