@@ -129,6 +129,25 @@ class PathGroup:
         colors=[plt.cm.rainbow(y) for y in ys]
         return colors
     
+    def guess_alignment(self,points=200):
+        if len(self.path1)==len(self.path2):
+            results=np.zeros([len(self.path1),2])
+            for i in range(len(self.path1)):
+                for j in [0,1]:
+                    path1shifted = copy.deepcopy(self.path1_unshifted)
+                    if j:
+                        path1shifted = self.reverse_path(self.shift_path(path1shifted,i))
+                    else:
+                        path1shifted = self.shift_path(path1shifted,i)
+                    interp1=[path1shifted.point(i) for i in np.linspace(0,1,points)]
+                    interp2=[self.path2.point(i) for i in np.linspace(0,1,points)]
+                    results[i,j]=np.sum(abs(np.array(interp1)-np.array(interp2)))
+            guessed_rotation,guessed_reverse = np.unravel_index(results.argmin(), results.shape)
+            return guessed_rotation,guessed_reverse
+        else:
+            print('Paths are not the same length')
+            return 0,0
+    
     #def calculate_interpolated_paths(self):
         # TODO this function should create a list of paths that are interpolated between and beyond path1 and path2
     
@@ -218,8 +237,7 @@ class MainWindow(QMainWindow):
         
         # button for automatically guessing path alignment
         self.guess_button = QPushButton("Guess alignment")
-        # TODO make this function
-        # self.guess_button.clicked.connect(self.guess_button_clicked)
+        self.guess_button.clicked.connect(self.guess_button_clicked)
 
         # button for saving the finished svg
         self.save_button = QPushButton("Save")
@@ -346,6 +364,16 @@ class MainWindow(QMainWindow):
     
     def nafter_input_changed(self):
         self.pathgroup.nafter = self.nafter_input.value()
+        self.pathgroup.update_paths()
+        self.pathgroup.plot_curves(self.svg_canvas)
+
+    def guess_button_clicked(self):
+        shift,reverse = self.pathgroup.guess_alignment()
+        self.pathgroup.path1start = shift
+        self.pathgroup.path1reverse = reverse
+        self.pathstart_slider.setValue(shift)
+        self.pathstart_label.setText("Path 1 start: "+str(self.pathgroup.path1start+1))
+        self.reverse_checkbox.setChecked(reverse)
         self.pathgroup.update_paths()
         self.pathgroup.plot_curves(self.svg_canvas)
 
