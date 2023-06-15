@@ -94,7 +94,8 @@ class PathGroup:
         self.path1 = self.path1_unshifted
         self.path2 = self.paths[self.path2idx]
 
-    def reverse_segment(self,segment):
+    @staticmethod
+    def reverse_segment(segment):
         start_temp=segment.start
         segment.start=segment.end
         segment.end=start_temp
@@ -103,14 +104,16 @@ class PathGroup:
             segment.control1=segment.control2
             segment.control2=control1_temp
         return segment
-
-    def reverse_path(self,path):
-        path_list = [self.reverse_segment(segment) for segment in path]
+    
+    @staticmethod
+    def reverse_path(path):
+        path_list = [PathGroup.reverse_segment(segment) for segment in path]
         path_list.reverse()
         path = svgpt.Path(*path_list)
         return path
 
-    def shift_path(self,path,rotatepoints):
+    @staticmethod
+    def shift_path(path,rotatepoints):
         return svgpt.Path(*path[rotatepoints:],*path[:rotatepoints])
 
     def path_colors(self,y1=0.25,y2=0.75):
