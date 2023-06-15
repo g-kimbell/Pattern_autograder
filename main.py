@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 import svgpathtools as svgpt
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QMainWindow, QHBoxLayout, QVBoxLayout, QFileDialog, QSlider, QLineEdit, QPushButton, QLabel, QCheckBox, QSpinBox
-from PyQt5.QtGui import QIntValidator
+from PyQt5.QtWidgets import (QApplication, QWidget, QFileDialog, QMainWindow, QHBoxLayout, QVBoxLayout, QFileDialog,
+                             QSlider, QPushButton, QLabel, QCheckBox, QSpinBox)
 import copy
 import sys
 
@@ -37,7 +37,9 @@ class Canvas(FigureCanvasQTAgg):
                     interps=[segment.point(i) for i in np.linspace(0,1,50)]
                     self.ax.plot(np.real(interps),-np.imag(interps),'-',**kwargs)
                 else:
-                    self.ax.plot([np.real(segment.start),np.real(segment.end)],[-np.imag(segment.start),-np.imag(segment.end)],'-',**kwargs)
+                    self.ax.plot([np.real(segment.start),np.real(segment.end)],
+                                 [-np.imag(segment.start),-np.imag(segment.end)],
+                                 '-',**kwargs)
             self.draw()
         else: # there is no file loaded
             self.plot_nothing_loaded()
@@ -52,11 +54,16 @@ class Canvas(FigureCanvasQTAgg):
             else:
                 diff = segment.end-segment.start
             diff = diff/np.abs(diff)
-            # draw an arrow starting from the intial point in the direction of diff. scale the arrow so it is always 0.1 the axis size
+            # draw an arrow starting from the intial point in the direction of diff
             xmin, xmax, ymin, ymax = self.ax.axis()
             arrow_length = 0.03*(abs(xmax-xmin)+abs(ymax-ymin))
             arrow_head_size = 0.5*arrow_length
-            self.ax.arrow(np.real(path[0].start),-np.imag(path[0].start),arrow_length*diff.real,-arrow_length*diff.imag,head_width=arrow_head_size,head_length=arrow_head_size,length_includes_head=True,**kwargs)
+            self.ax.arrow(np.real(path[0].start),-np.imag(path[0].start),
+                          arrow_length*diff.real,-arrow_length*diff.imag,
+                          head_width=arrow_head_size,
+                          head_length=arrow_head_size,
+                          length_includes_head=True,
+                          **kwargs)
             self.draw()
 
 
@@ -148,7 +155,7 @@ class PathGroup:
             raise ValueError('Paths are not the same length')
     
     #def calculate_interpolated_paths(self):
-        # TODO this function should create a list of paths that are interpolated between and beyond path1 and path2
+        # TODO function creates a list of paths interpolated between and beyond path1 and path2
     
     def plot_curves(self,canvas):
         # TODO this should be updated to plot the interpolated paths once they are calculated
@@ -202,7 +209,6 @@ class MainWindow(QMainWindow):
         self.pathstart_label = QLabel("Path start index: 1")
 
         self.reverse_checkbox = QCheckBox("Reverse path 1")
-        # TODO make this function
         self.reverse_checkbox.stateChanged.connect(self.reverse_checkbox_changed)
 
         # integer input for number of curves before
@@ -235,7 +241,7 @@ class MainWindow(QMainWindow):
         self.plot_message.setAlignment(Qt.AlignCenter)
         
         # button for automatically guessing path alignment
-        self.guess_button = QPushButton("Guess alignment")
+        self.guess_button = QPushButton("Auto align paths")
         self.guess_button.clicked.connect(self.guess_button_clicked)
 
         # button for saving the finished svg
@@ -376,7 +382,7 @@ class MainWindow(QMainWindow):
             self.pathgroup.update_paths()
             self.pathgroup.plot_curves(self.svg_canvas)
         except ValueError:
-            self.plot_message.setText("Error: paths do not have the same length")
+            self.plot_message.setText("Auto align error: paths do not have the same length")
 
 # main window for pyqt5 gui
 if __name__ == "__main__":
