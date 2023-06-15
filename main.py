@@ -84,6 +84,7 @@ class PathGroup:
         self.path1 = []
         self.path2 = []
         self.all_paths = []
+        self.svg_attributes = []
 
     def update_paths(self):
         if len(self.paths)>1:
@@ -103,6 +104,7 @@ class PathGroup:
             
     def load_file(self,filename):
         self.paths, self.attributes, self.svg_attributes = svgpt.svg2paths2(filename)
+        print(self.svg_attributes)
         self.npaths = len(self.paths)
 
     @staticmethod
@@ -275,8 +277,7 @@ class MainWindow(QMainWindow):
 
         # button for saving the finished svg
         self.save_button = QPushButton("Save")
-        # TODO make this function
-        #self.save_button.clicked.connect(self.save_button_clicked)
+        self.save_button.clicked.connect(self.save_button_clicked)
 
         # layout
         control_layout = QVBoxLayout()
@@ -339,12 +340,12 @@ class MainWindow(QMainWindow):
         file_dialog.setFileMode(QFileDialog.ExistingFile)
         file_dialog.setNameFilter("SVG files (*.svg)")
         if file_dialog.exec_():
-            filename = file_dialog.selectedFiles()
-            self.pathgroup.load_file(filename[0])
+            self.filename = file_dialog.selectedFiles()[0]
+            self.pathgroup.load_file(self.filename)
             self.initialise_sliders(self.pathgroup)
             self.pathgroup.update_paths()
             self.pathgroup.plot_curves(self.svg_canvas)
-            self.plot_message.setText("File loaded: "+filename[0])
+            self.plot_message.setText("File loaded: "+self.filename)
     
     def initialise_sliders(self,pathgroup):
         self.path1idx_slider.setMaximum(pathgroup.npaths-1)
@@ -413,6 +414,22 @@ class MainWindow(QMainWindow):
             self.pathgroup.plot_curves(self.svg_canvas)
         except ValueError:
             self.plot_message.setText("Auto align error: paths do not have the same length")
+
+    def save_button_clicked(self):
+        if self.pathgroup.all_paths:
+            save_filename, _ = QFileDialog.getSaveFileName(self, 
+                "Save File", "", "All Files(*);;SVG files(*.svg)")
+            if save_filename:
+                colors = self.pathgroup.path_colors()
+                fixed_attributes = 'fill:none;stroke-width:5px;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:5;'
+                new_attributes = [{'style':f'fill:none;stroke:rgb({int(c[0]*255)}, {int(c[1]*255)}, {int(c[2]*255)});{fixed_attributes}'} for c in colors]
+                svg_attributes = self.pathgroup.svg_attributes
+                xmin, xmax, ymin, ymax = self.svg_canvas.ax.axis()
+                svg_attributes['viewBox'] = f"{ymin} {xmin} {ymax-ymin} {xmax-xmin}"
+                svgpt.wsvg(paths=self.pathgroup.all_paths,attributes=new_attributes,svg_attributes=svg_attributes,openinbrowser=True,filename=save_filename)
+                self.plot_message.setText("File saved")
+        else:
+            self.plot_message.setText("Nothing to save!")
 
 # main window for pyqt5 gui
 if __name__ == "__main__":
