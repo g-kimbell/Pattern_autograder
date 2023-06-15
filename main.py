@@ -145,8 +145,7 @@ class PathGroup:
             guessed_rotation,guessed_reverse = np.unravel_index(results.argmin(), results.shape)
             return guessed_rotation,guessed_reverse
         else:
-            print('Paths are not the same length')
-            return 0,0
+            raise ValueError('Paths are not the same length')
     
     #def calculate_interpolated_paths(self):
         # TODO this function should create a list of paths that are interpolated between and beyond path1 and path2
@@ -309,7 +308,6 @@ class MainWindow(QMainWindow):
             self.pathgroup.load_file(filename[0])
             self.initialise_sliders(self.pathgroup)
             if self.pathgroup.npaths > 1:
-                print("yo")
                 self.path2idx_slider.setValue(1)
                 self.path2idx_label.setText("Path 2 index: 2")
                 self.pathgroup.path2idx = 1
@@ -368,14 +366,17 @@ class MainWindow(QMainWindow):
         self.pathgroup.plot_curves(self.svg_canvas)
 
     def guess_button_clicked(self):
-        shift,reverse = self.pathgroup.guess_alignment()
-        self.pathgroup.path1start = shift
-        self.pathgroup.path1reverse = reverse
-        self.pathstart_slider.setValue(shift)
-        self.pathstart_label.setText("Path 1 start: "+str(self.pathgroup.path1start+1))
-        self.reverse_checkbox.setChecked(reverse)
-        self.pathgroup.update_paths()
-        self.pathgroup.plot_curves(self.svg_canvas)
+        try:
+            shift,reverse = self.pathgroup.guess_alignment()
+            self.pathgroup.path1start = shift
+            self.pathgroup.path1reverse = reverse
+            self.pathstart_slider.setValue(shift)
+            self.pathstart_label.setText("Path 1 start: "+str(self.pathgroup.path1start+1))
+            self.reverse_checkbox.setChecked(reverse)
+            self.pathgroup.update_paths()
+            self.pathgroup.plot_curves(self.svg_canvas)
+        except ValueError:
+            self.plot_message.setText("Error: paths do not have the same length")
 
 # main window for pyqt5 gui
 if __name__ == "__main__":
