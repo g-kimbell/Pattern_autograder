@@ -34,7 +34,7 @@ class Canvas(FigureCanvasQTAgg):
         if len(path)>0:
             for segment in path:
                 if type(segment)==svgpt.CubicBezier:
-                    interps=[segment.point(i) for i in np.linspace(0,1,50)]
+                    interps=[segment.point(i) for i in np.linspace(0,1,20)]
                     self.ax.plot(np.real(interps),-np.imag(interps),'-',**kwargs)
                 else:
                     self.ax.plot([np.real(segment.start),np.real(segment.end)],
@@ -83,6 +83,7 @@ class PathGroup:
         self.path1_unshifted = []
         self.path1 = []
         self.path2 = []
+        self.all_paths = []
     
     def update_paths(self):
         if len(self.paths)>1:
@@ -92,6 +93,13 @@ class PathGroup:
             if self.path1reverse:
                 self.path1 = self.reverse_path(self.path1)
             self.path2 = self.paths[self.path2idx]
+            if self.nbefore+self.ninter+self.nafter>0:
+                try:
+                    self.all_paths = self.calculate_interpolated_paths()
+                except ValueError:
+                    self.all_paths = [self.path1,self.path2]            
+            else:
+                self.all_paths=[self.path1,self.path2]
             
     def load_file(self,filename):
         self.paths, self.attributes, self.svg_attributes = svgpt.svg2paths2(filename)
@@ -154,17 +162,42 @@ class PathGroup:
         else:
             raise ValueError('Paths are not the same length')
     
-    #def calculate_interpolated_paths(self):
-        # TODO function creates a list of paths interpolated between and beyond path1 and path2
+    def calculate_interpolated_paths(self):
+        if len(self.path1)==len(self.path2):
+            total_curves=self.nbefore+self.ninter+self.nafter+2
+            pathparams=np.zeros([len(self.path1),4,total_curves],dtype=complex)
+            for j,path in [(self.nbefore,self.path1),(-self.nafter-1,self.path2)]:
+                for i,segment in enumerate(path):
+                        pathparams[i,0,j] = segment.start
+                        pathparams[i,1,j] = segment.end
+                        if type(segment)==svgpt.CubicBezier:
+                            pathparams[i,2,j] = segment.control1
+                            pathparams[i,3,j] = segment.control2
+
+            for i in range(total_curves):
+                pathparams[:,:,i] = ((-i+self.ninter+self.nbefore+1)/(self.ninter+1) * pathparams[:,:,self.nbefore] 
+                                     + (i-self.nbefore)/(self.ninter+1) * pathparams[:,:,-self.nafter-1])
+            all_paths = []
+            for j in range(total_curves):
+                segments=[]
+                for i in range(len(self.path1)):
+                    if ((pathparams[i,2,j]==0) and (pathparams[i,3,j]==0)):
+                        segments.append(svgpt.Line(start=pathparams[i,0,j],end=pathparams[i,1,j]))
+                    else:
+                        segments.append(svgpt.CubicBezier(start=pathparams[i,0,j],end=pathparams[i,1,j],
+                                                          control1=pathparams[i,2,j],control2=pathparams[i,3,j]))
+                all_paths.append(svgpt.Path(*segments))
+            return all_paths
+        else:
+            raise ValueError('Paths are not the same length')
     
     def plot_curves(self,canvas):
-        # TODO this should be updated to plot the interpolated paths once they are calculated
         canvas.clear()
         colors = self.path_colors()
-        canvas.plot_path(self.path1,color=colors[0])
-        canvas.plot_path(self.path2,color=colors[-1])
-        canvas.plot_arrows(self.path1,color=colors[0])
-        canvas.plot_arrows(self.path2,color=colors[-1])
+        for i,path in enumerate(self.all_paths):
+            canvas.plot_path(path,color=colors[i])
+        canvas.plot_arrows(self.path1,color=colors[self.nbefore])
+        canvas.plot_arrows(self.path2,color=colors[self.nbefore+self.ninter+1])
 
 
 class MainWindow(QMainWindow):
